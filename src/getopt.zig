@@ -8,11 +8,11 @@ const OptType = enum {
 
 const Opt = struct {
     type: OptType,
-    name: ?*const []const u8,
-    value: ?*const []const u8,
+    name: ?[]const u8,
+    value: ?[]const u8,
 
-    pub fn init(t: OptType, name: ?*const [] const u8, value: ?*const [] const u8) Opt {
-        return Opt {
+    pub fn init(t: OptType, name: ?[]const u8, value: ?[]const u8) Opt {
+        return Opt{
             .type = t,
             .name = name,
             .value = value,
@@ -20,32 +20,44 @@ const Opt = struct {
     }
 };
 
-pub fn parseOpts(args: [][] const u8, allocator: std.mem.Allocator) !void {
+pub fn parseOpts(args: [][]const u8, allocator: std.mem.Allocator) !void {
     var opts = std.ArrayList(Opt).init(allocator);
+    defer opts.deinit();
 
-    for (args[1..]) |arg| {
-        std.debug.print("processing arg: {s}\n", .{arg});
-
+    for (args[1..args.len]) |arg| {
         if (std.mem.startsWith(u8, arg, "--")) {
             try opts.append(getLongOpt(arg));
         } else if (std.mem.startsWith(u8, arg, "-")) {
-            try opts.append(Opt.init(OptType.ShortOpt, &arg[0..], null));
+            try opts.append(getShortOpt(arg));
         } else {
-            try opts.append(Opt.init(OptType.Literal, null, &arg[0..]));
+            try opts.append(getLiteral(arg));
         }
     }
 
     for (opts.items) |opt| {
         std.debug.print("{} ", .{opt.type});
-        if (opt.name) |name| std.debug.print("{s} ", .{name.*});
-        if (opt.value) |value| std.debug.print("{s} ", .{value.*});
+        if (opt.name) |name| std.debug.print("{s} ", .{name});
+        if (opt.value) |value| std.debug.print("{s} ", .{value});
         std.debug.print("\n", .{});
     }
+}
 
-    defer opts.deinit();
+fn getOptSegments(opt_type: OptType, data: []const u8) Opt {
+    const indexOfEqualsSign = std.mem.indexOf(u8, data, "=");
+    const name = data[0 .. indexOfEqualsSign orelse data.len];
+    const value: ?[]const u8 = if (indexOfEqualsSign) |i| data[(i + 1)..data.len] else null;
+
+    return Opt.init(opt_type, name, value);
 }
 
 fn getLongOpt(arg: []const u8) Opt {
-    std.debug.print("longopt: {s}", .{arg});
-    return Opt.init(OptType.LongOpt, &arg[2..], null);
+    return getOptSegments(OptType.LongOpt, arg[2..]);
+}
+
+fn getShortOpt(arg: []const u8) Opt {
+    return getOptSegments(OptType.ShortOpt, arg[1..]);
+}
+
+fn getLiteral(arg: []const u8) Opt {
+    return Opt.init(OptType.Literal, null, arg);
 }
