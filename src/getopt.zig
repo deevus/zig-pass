@@ -1,12 +1,12 @@
 const std = @import("std");
 
-const OptType = enum {
+pub const OptType = enum {
     ShortOpt,
     LongOpt,
     Literal,
 };
 
-const Opt = struct {
+pub const Opt = struct {
     type: OptType,
     name: ?[]const u8,
     value: ?[]const u8,
@@ -18,27 +18,41 @@ const Opt = struct {
             .value = value,
         };
     }
-};
 
-pub fn parseOpts(args: [][]const u8, allocator: std.mem.Allocator) !void {
-    var opts = std.ArrayList(Opt).init(allocator);
-    defer opts.deinit();
-
-    for (args[1..args.len]) |arg| {
-        if (std.mem.startsWith(u8, arg, "--")) {
-            try opts.append(getLongOpt(arg));
-        } else if (std.mem.startsWith(u8, arg, "-")) {
-            try opts.append(getShortOpt(arg));
-        } else {
-            try opts.append(getLiteral(arg));
-        }
+    pub fn isLiteral(self: Opt) bool {
+        return self.type == OptType.Literal;
     }
 
-    for (opts.items) |opt| {
-        std.debug.print("{} ", .{opt.type});
-        if (opt.name) |name| std.debug.print("{s} ", .{name});
-        if (opt.value) |value| std.debug.print("{s} ", .{value});
-        std.debug.print("\n", .{});
+    pub fn isLongOpt(self: Opt) bool {
+        return self.type == OptType.LongOpt;
+    }
+
+    pub fn isShortOpt(self: Opt) bool {
+        return self.type == OptType.ShortOpt;
+    }
+
+    pub fn valueEquals(self: Opt, value: []const u8) bool {
+        return std.mem.eql(u8, value, self.value.?);
+    }
+};
+
+pub fn parseOpts(args: [][]const u8, allocator: std.mem.Allocator) !std.ArrayList(Opt) {
+    var opts = std.ArrayList(Opt).init(allocator);
+
+    for (args[1..args.len]) |arg| {
+        try opts.append(parseOpt(arg));
+    }
+
+    return opts;
+}
+
+pub fn parseOpt(arg: []const u8) Opt {
+    if (std.mem.startsWith(u8, arg, "--")) {
+        return getLongOpt(arg);
+    } else if (std.mem.startsWith(u8, arg, "-")) {
+        return getShortOpt(arg);
+    } else {
+        return getLiteral(arg);
     }
 }
 
