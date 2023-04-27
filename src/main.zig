@@ -28,6 +28,7 @@ pub fn main() !void {
             var result = try std.ChildProcess.exec(.{
                 .argv = git_args.items,
                 .allocator = gpa,
+                .max_output_bytes = 1_000_000,
             });
 
             std.debug.print("{s}{s}", .{ result.stdout, result.stderr });
