@@ -1,7 +1,9 @@
 const std = @import("std");
 const getopt = @import("./getopt.zig");
 const config = @import("./config.zig");
+
 const Opt = getopt.Opt;
+const Git = @import("./git.zig").Git;
 
 pub fn main() !void {
     var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
@@ -11,27 +13,14 @@ pub fn main() !void {
 
     const pass_config = try config.PassConfig.init(gpa);
 
-    var first_opt: Opt = getopt.parseOpt(args[1]);
+    const first_opt: Opt = getopt.parseOpt(args[1]);
     if (first_opt.isLiteral()) {
         if (first_opt.valueEquals("git")) {
-            var git_args = std.ArrayList([]const u8).init(gpa);
-            defer git_args.deinit();
+            const git = Git.init(pass_config);
 
-            try git_args.append("git");
-            try git_args.append("-C");
-            try git_args.append(pass_config.prefix);
+            var result = try git.execute(args[2..], gpa);
 
-            for (args[2..]) |arg| {
-                try git_args.append(arg);
-            }
-
-            var result = try std.ChildProcess.exec(.{
-                .argv = git_args.items,
-                .allocator = gpa,
-                .max_output_bytes = 1_000_000,
-            });
-
-            std.debug.print("{s}{s}", .{ result.stdout, result.stderr });
+            std.debug.print("{s}{s}", .{ result.stderr, result.stdout });
         }
     }
 }
