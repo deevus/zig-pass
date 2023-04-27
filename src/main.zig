@@ -12,6 +12,7 @@ pub fn main() !void {
     defer std.process.argsFree(gpa, args);
 
     const pass_config = try config.PassConfig.init(gpa);
+    defer pass_config.deinit();
 
     const first_opt: Opt = getopt.parseOpt(args[1]);
     if (first_opt.isLiteral()) {

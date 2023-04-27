@@ -1,6 +1,8 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub const PassConfig = struct {
+    allocator: std.mem.Allocator,
     home: []const u8,
     prefix: []const u8,
     extensions: []const u8,
@@ -11,16 +13,17 @@ pub const PassConfig = struct {
     gpgOpts: []const u8,
 
     pub fn init(allocator: std.mem.Allocator) !PassConfig {
-        const home = getHome();
-        const prefix = getPrefix(allocator, home);
-        const extensions = getExtensions(allocator, prefix);
-        const clip_time = getClipTime();
-        const generated_length = getGeneratedLength();
-        const character_set = getCharacterSet();
-        const character_set_no_symbols = getCharacterSetNoSymbols();
-        const gpg_opts = getGpgOpts(allocator);
+        const home = try getHome(allocator);
+        const prefix = try getPrefix(allocator, home);
+        const extensions = try getExtensions(allocator, prefix);
+        const clip_time = try getClipTime(allocator);
+        const generated_length = try getGeneratedLength(allocator);
+        const character_set = try getCharacterSet(allocator);
+        const character_set_no_symbols = try getCharacterSetNoSymbols(allocator);
+        const gpg_opts = try getGpgOpts(allocator);
 
         return PassConfig{
+            .allocator = allocator,
             .home = home,
             .prefix = prefix,
             .extensions = extensions,
@@ -32,39 +35,64 @@ pub const PassConfig = struct {
         };
     }
 
-    fn getHome() []const u8 {
-        return std.os.getenv("HOME").?;
+    pub fn deinit(self: PassConfig) void {
+        const allocator = self.allocator;
+        allocator.free(self.home);
+        allocator.free(self.prefix);
+        allocator.free(self.extensions);
+        allocator.free(self.clipTime);
+        allocator.free(self.generatedLength);
+        allocator.free(self.characterSet);
+        allocator.free(self.characterSetNoSymbols);
+        allocator.free(self.gpgOpts);
     }
 
-    fn getPrefix(allocator: std.mem.Allocator, home: []const u8) []const u8 {
-        return std.os.getenv("PASSWORD_STORE_DIR") orelse
-            std.fmt.allocPrint(allocator, "{s}/.password-store", .{home}) catch unreachable;
+    fn getHome(allocator: std.mem.Allocator) ![]const u8 {
+        return switch (builtin.os.tag) {
+            .windows => std.process.getEnvVarOwned(allocator, "USERPROFILE") catch unreachable,
+            else => std.process.getEnvVarOwned(allocator, "HOME") catch unreachable,
+        };
     }
 
-    fn getExtensions(allocator: std.mem.Allocator, prefix: []const u8) []const u8 {
-        return std.os.getenv("PASSWORD_STORE_EXTENSIONS_DIR") orelse
-            std.fmt.allocPrint(allocator, "{s}/.extensions", .{prefix}) catch unreachable;
+    fn getPrefix(allocator: std.mem.Allocator, home: []const u8) ![]const u8 {
+        return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_DIR") catch {
+            return try std.fmt.allocPrint(allocator, "{s}/.password-store", .{home});
+        };
     }
 
-    fn getClipTime() []const u8 {
-        return std.os.getenv("PASSWORD_STORE_CLIP_TIME") orelse "45";
+    fn getExtensions(allocator: std.mem.Allocator, prefix: []const u8) ![]const u8 {
+        return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_EXTENSIONS_DIR") catch {
+            return try std.fmt.allocPrint(allocator, "{s}/.extensions", .{prefix});
+        };
     }
 
-    fn getGeneratedLength() []const u8 {
-        return std.os.getenv("PASSWORD_STORE_GENERATED_LENGTH") orelse "25";
+    fn getClipTime(allocator: std.mem.Allocator) ![]const u8 {
+        return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_CLIP_TIME") catch {
+            return try allocator.dupe(u8, "45");
+        };
     }
 
-    fn getCharacterSet() []const u8 {
-        return std.os.getenv("PASSWORD_STORE_CHARACTER_SET") orelse "[:punct:][:alnum:]";
+    fn getGeneratedLength(allocator: std.mem.Allocator) ![]const u8 {
+        return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_GENERATED_LENGTH") catch {
+            return try allocator.dupe(u8, "25");
+        };
     }
 
-    fn getCharacterSetNoSymbols() []const u8 {
-        return std.os.getenv("PASSWORD_STORE_CHARACTER_SET_NO_SYMBOLS") orelse "[:alnum:]";
+    fn getCharacterSet(allocator: std.mem.Allocator) ![]const u8 {
+        return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_CHARACTER_SET") catch {
+            return try allocator.dupe(u8, "[:punct:][:alnum:]");
+        };
     }
 
-    fn getGpgOpts(allocator: std.mem.Allocator) []const u8 {
-        const customOpts = std.os.getenv("PASSWORD_STORE_GPG_OPTS") orelse "";
+    fn getCharacterSetNoSymbols(allocator: std.mem.Allocator) ![]const u8 {
+        return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_CHARACTER_SET_NO_SYMBOLS") catch {
+            return try allocator.dupe(u8, "[:alnum:]");
+        };
+    }
 
-        return std.fmt.allocPrint(allocator, "{s} --quiet --yes --compress-algo=none --no-encrypt-to", .{customOpts}) catch unreachable;
+    fn getGpgOpts(allocator: std.mem.Allocator) ![]const u8 {
+        const customOpts = std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_GPG_OPTS") catch "";
+
+        return try std.fmt.allocPrint(allocator, "{s} --quiet --yes --compress-algo=none --no-encrypt-to", .{customOpts});
     }
 };
