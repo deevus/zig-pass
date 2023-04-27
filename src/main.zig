@@ -17,9 +17,9 @@ pub fn main() !void {
     const first_opt: Opt = getopt.parseOpt(args[1]);
     if (first_opt.isLiteral()) {
         if (first_opt.valueEquals("git")) {
-            const git = Git.init(pass_config);
+            const git = Git.init(pass_config, gpa);
 
-            var result = try git.execute(args[2..], gpa);
+            var result = try git.execute(args[2..]);
 
             std.debug.print("{s}{s}", .{ result.stderr, result.stdout });
         }
