@@ -1,7 +1,9 @@
 const std = @import("std");
 const getopt = @import("./getopt.zig");
 const config = @import("./config.zig");
+const utils = @import("./utils.zig");
 
+const PassConfig = config.PassConfig;
 const Opt = getopt.Opt;
 const Git = @import("./git.zig").Git;
 
@@ -17,10 +19,20 @@ pub fn main() !void {
     const first_opt: Opt = getopt.parseOpt(args[1]);
     if (first_opt.isLiteral()) {
         if (first_opt.valueEquals("git")) {
-            const git = Git.init(pass_config, gpa);
+            try commandGit(gpa, pass_config, args[2..]);
+        }
+    }
+}
 
-            var result = try git.execute(args[2..]);
+fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_args: [][]const u8) !void {
+    const git = Git.init(pass_config, allocator);
 
+    if (git_args.len > 0) {
+        const second_opt: Opt = getopt.parseOpt(git_args[0]);
+        if (second_opt.valueEquals("init")) {
+            _ = try git.initRepository();
+        } else {
+            const result = try git.execute(git_args);
             std.debug.print("{s}{s}", .{ result.stderr, result.stdout });
         }
     }
