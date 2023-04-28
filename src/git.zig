@@ -53,6 +53,16 @@ pub const Git = struct {
         const textconv = try std.fmt.allocPrint(self.allocator, "\"gpg -d {s}\"", .{self.config.gpgOpts});
         defer self.allocator.free(textconv);
 
+        const dot_git_dir_path = try std.fmt.allocPrint(self.allocator, "{s}/.git", .{self.config.prefix});
+        defer self.allocator.free(dot_git_dir_path);
+
+        const dot_git_dir: std.fs.Dir = try std.fs.openDirAbsolute(dot_git_dir_path, .{});
+        const dir_stat = try dot_git_dir.stat();
+        if (dir_stat.kind == .Directory) {
+            std.log.err("Password store is already a git repository", .{});
+            return;
+        }
+
         // TODO: echo '*.gpg diff=gpg' > .gitattributes
         _ = try self.execute(&.{"init"});
         _ = try self.addFile(self.config.prefix);
