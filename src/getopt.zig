@@ -10,12 +10,14 @@ pub const Opt = struct {
     type: OptType,
     name: ?[]const u8,
     value: ?[]const u8,
+    raw: []const u8,
 
-    pub fn init(t: OptType, name: ?[]const u8, value: ?[]const u8) Opt {
+    pub fn init(t: OptType, name: ?[]const u8, value: ?[]const u8, raw: []const u8) Opt {
         return Opt{
             .type = t,
             .name = name,
             .value = value,
+            .raw = raw,
         };
     }
 
@@ -61,7 +63,7 @@ fn getOptSegments(opt_type: OptType, data: []const u8) Opt {
     const name = data[0 .. indexOfEqualsSign orelse data.len];
     const value: ?[]const u8 = if (indexOfEqualsSign) |i| data[(i + 1)..data.len] else null;
 
-    return Opt.init(opt_type, name, value);
+    return Opt.init(opt_type, name, value, data);
 }
 
 fn getLongOpt(arg: []const u8) Opt {
@@ -73,5 +75,5 @@ fn getShortOpt(arg: []const u8) Opt {
 }
 
 fn getLiteral(arg: []const u8) Opt {
-    return Opt.init(OptType.Literal, null, arg);
+    return Opt.init(OptType.Literal, null, arg, arg);
 }

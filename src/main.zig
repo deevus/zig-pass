@@ -16,24 +16,28 @@ pub fn main() !void {
     const pass_config = try config.PassConfig.init(gpa);
     defer pass_config.deinit();
 
-    const first_opt: Opt = getopt.parseOpt(args[1]);
+    const opts = try getopt.parseOpts(args, gpa);
+
+    const first_opt: Opt = opts.items[0];
     if (first_opt.isLiteral()) {
         if (first_opt.valueEquals("git")) {
-            try commandGit(gpa, pass_config, args[2..]);
+            try commandGit(gpa, pass_config, opts.items[1..], args[2..]);
         }
     }
 }
 
-fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_args: [][]const u8) !void {
-    const git = Git.init(pass_config, allocator);
+fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_opts: []Opt, git_args: [][]const u8) !void {
+    const git = Git.init(allocator, pass_config, true);
 
-    if (git_args.len > 0) {
-        const second_opt: Opt = getopt.parseOpt(git_args[0]);
+    if (git_opts.len > 0) {
+        const second_opt: Opt = git_opts[0];
+
         if (second_opt.valueEquals("init")) {
             _ = try git.initRepository();
         } else {
-            const result = try git.execute(git_args);
-            std.debug.print("{s}{s}", .{ result.stderr, result.stdout });
+            _ = try git.execute(git_args);
         }
+    } else {
+        _ = try git.execute(&.{});
     }
 }

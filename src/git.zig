@@ -7,11 +7,13 @@ const ExecResult = std.ChildProcess.ExecResult;
 pub const Git = struct {
     config: PassConfig,
     allocator: std.mem.Allocator,
+    outputToConsole: bool,
 
-    pub fn init(config: PassConfig, allocator: std.mem.Allocator) Git {
+    pub fn init(allocator: std.mem.Allocator, config: PassConfig, output_to_console: bool) Git {
         return .{
             .config = config,
             .allocator = allocator,
+            .outputToConsole = output_to_console,
         };
     }
 
@@ -22,11 +24,17 @@ pub const Git = struct {
         try git_args.appendSlice(&.{ "git", "-C", self.config.prefix });
         try git_args.appendSlice(args);
 
-        return try std.ChildProcess.exec(.{
+        const result = try std.ChildProcess.exec(.{
             .argv = git_args.items,
             .allocator = self.allocator,
             .max_output_bytes = 1_000_000,
         });
+
+        if (self.outputToConsole) {
+            std.debug.print("{s}{s}", .{ result.stdout, result.stderr });
+        }
+
+        return result;
     }
 
     pub fn commit(self: Git, message: []const u8) !ExecResult {
