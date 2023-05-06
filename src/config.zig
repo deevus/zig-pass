@@ -56,13 +56,16 @@ pub const PassConfig = struct {
 
     fn getPrefix(allocator: std.mem.Allocator, home: []const u8) ![]const u8 {
         return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_DIR") catch {
-            return try std.fmt.allocPrint(allocator, "{s}/.password-store", .{home});
+            return try std.fs.path.join(allocator, &.{
+                home,
+                ".password-store",
+            });
         };
     }
 
     fn getExtensions(allocator: std.mem.Allocator, prefix: []const u8) ![]const u8 {
         return std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_EXTENSIONS_DIR") catch {
-            return try std.fmt.allocPrint(allocator, "{s}/.extensions", .{prefix});
+            return try std.fs.path.join(allocator, &.{ prefix, ".extensions" });
         };
     }
 
