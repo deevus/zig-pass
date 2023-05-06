@@ -36,6 +36,10 @@ pub const Opt = struct {
     pub fn valueEquals(self: Opt, value: []const u8) bool {
         return std.mem.eql(u8, value, self.value.?);
     }
+
+    pub fn nameEquals(self: Opt, name: []const u8) bool {
+        return std.mem.eql(u8, name, self.name.?);
+    }
 };
 
 pub fn parseOpts(args: [][]const u8, allocator: std.mem.Allocator) !std.ArrayList(Opt) {
