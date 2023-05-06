@@ -34,7 +34,7 @@ $ResetClipArgs = @(
     "'$TempFile'"
 )
 
-$Process = Start-Process -WindowStyle Normal -ArgumentList $ResetClipArgs "powershell.exe" -PassThru
+$Process = Start-Process -WindowStyle Hidden -ArgumentList $ResetClipArgs "powershell.exe" -PassThru
 $Process.Id | Out-File -FilePath $TempFile
 
 Write-Host "Copied $Name to clipboard. Will clear in $ClipTime seconds."
