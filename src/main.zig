@@ -95,52 +95,58 @@ fn commandShow(allocator: std.mem.Allocator, pass_config: PassConfig, opts: std.
     if (show_options.name) |name| {
         var output = try gpg.decrypt(name);
 
-        const line: ?[]const u8 = blk: {
-            var i: u8 = 0;
-            while (output.next()) |line| {
-                if (show_options.selectedLine == i) {
-                    break :blk line;
+        if (show_options.clip) {
+            const line: ?[]const u8 = blk: {
+                var i: u8 = 0;
+                while (output.next()) |line| {
+                    if (show_options.selectedLine == i) {
+                        break :blk line;
+                    }
+
+                    i += 1;
                 }
 
-                i += 1;
-            }
-
-            break :blk null;
-        };
-
-        if (line) |l| {
-            const quoted = try utils.wrapWithDoubleQuotes(allocator, l);
-            defer allocator.free(quoted);
-
-            const clip_script = try utils.getScriptPath(allocator, switch (builtin.os.tag) {
-                .windows => "Clip.ps1",
-                else => "Clip.sh",
-            });
-            defer allocator.free(clip_script);
-
-            const clip_args = switch (builtin.os.tag) {
-                .windows => .{
-                    "powershell",
-                    "-NoProfile",
-                    clip_script,
-                    "-Value",
-                    quoted,
-                    "-ClipTime",
-                    pass_config.clipTime,
-                    "-Name",
-                    name,
-                },
-                else => .{},
+                break :blk null;
             };
 
-            const clip_result = try std.ChildProcess.exec(.{
-                .allocator = allocator,
-                .argv = &clip_args,
-            });
-            defer allocator.free(clip_result.stderr);
-            defer allocator.free(clip_result.stdout);
+            if (line) |l| {
+                const quoted = try utils.wrapWithDoubleQuotes(allocator, l);
+                defer allocator.free(quoted);
 
-            std.debug.print("{s}{s}\n", .{ clip_result.stderr, clip_result.stdout });
+                const clip_script = try utils.getScriptPath(allocator, switch (builtin.os.tag) {
+                    .windows => "Clip.ps1",
+                    else => "Clip.sh",
+                });
+                defer allocator.free(clip_script);
+
+                const clip_args = switch (builtin.os.tag) {
+                    .windows => .{
+                        "powershell",
+                        "-NoProfile",
+                        clip_script,
+                        "-Value",
+                        quoted,
+                        "-ClipTime",
+                        pass_config.clipTime,
+                        "-Name",
+                        name,
+                    },
+                    else => .{},
+                };
+
+                const clip_result = try std.ChildProcess.exec(.{
+                    .allocator = allocator,
+                    .argv = &clip_args,
+                });
+                defer allocator.free(clip_result.stderr);
+                defer allocator.free(clip_result.stdout);
+
+                std.debug.print("{s}{s}\n", .{ clip_result.stderr, clip_result.stdout });
+            }
+        } else {
+            while (output.next()) |l| {
+                std.debug.print("{s}\n", .{l});
+            }
         }
     }
 }
