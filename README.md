@@ -8,7 +8,7 @@ Zig Pass aims to be somewhat compatible with the bash client, so that you can us
 
 - GnuPg (`gpg`)
 
-## Why
+# Why
 
 I've been using Password Store for many years. The [Password Store Bash Client](https://git.zx2c4.com/password-store) works great on MacOS and Linux. However it doesn't work properly on Windows, due to a lack of an easily attainable `getopt` binary. You can use [Pass Winmenu](https://github.com/geluk/pass-winmenu) (and I do), but it doesn't expose a terminal client. 
 
