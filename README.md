@@ -23,3 +23,4 @@ My particular use-case is using a dotfile manager: [Chezmoi](https://www.chezmoi
 | QRCode             | ❌      | ❌    | ❌    |
 | Create password    | ❌      | ❌    | ❌    |
 | Edit password      | ❌      | ❌    | ❌    |
+| Git Operations     | ✅      | ✅    | ✅    | 
