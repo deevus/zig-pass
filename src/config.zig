@@ -11,6 +11,7 @@ pub const PassConfig = struct {
     characterSet: []const u8,
     characterSetNoSymbols: []const u8,
     gpgOpts: []const u8,
+    gpgId: ?[]const u8,
 
     pub fn init(allocator: std.mem.Allocator) !PassConfig {
         const home = try getHome(allocator);
@@ -21,6 +22,7 @@ pub const PassConfig = struct {
         const character_set = try getCharacterSet(allocator);
         const character_set_no_symbols = try getCharacterSetNoSymbols(allocator);
         const gpg_opts = try getGpgOpts(allocator);
+        const gpg_id = try getGpgId(allocator, prefix);
 
         return PassConfig{
             .allocator = allocator,
@@ -32,6 +34,7 @@ pub const PassConfig = struct {
             .characterSet = character_set,
             .characterSetNoSymbols = character_set_no_symbols,
             .gpgOpts = gpg_opts,
+            .gpgId = gpg_id,
         };
     }
 
@@ -97,5 +100,25 @@ pub const PassConfig = struct {
         const customOpts = std.process.getEnvVarOwned(allocator, "PASSWORD_STORE_GPG_OPTS") catch "";
 
         return try std.fmt.allocPrint(allocator, "{s} --quiet --yes --compress-algo=none --no-encrypt-to", .{customOpts});
+    }
+
+    fn getGpgId(allocator: std.mem.Allocator, prefix: []const u8) !?[]const u8 {
+        const gpg_id_path = try std.fs.path.join(allocator, &.{ prefix, ".gpg-id" });
+        defer allocator.free(gpg_id_path);
+
+        const file = std.fs.openFileAbsolute(gpg_id_path, .{}) catch |err| {
+            if (err == error.FileNotFound) {
+                return null;
+            }
+
+            return err;
+        };
+        defer file.close();
+
+        var gpg_id = try allocator.alloc(u8, 16);
+
+        _ = try file.read(gpg_id);
+
+        return gpg_id;
     }
 };

@@ -34,14 +34,34 @@ pub const Gpg = struct {
         });
         defer self.allocator.free(absolute_path);
 
-        const args = .{
+        var args = ArrayList([]const u8).init(self.allocator);
+        defer args.deinit();
+
+        if (self.config.gpgId) |gpg_id| {
+            try args.appendSlice(&.{
+                "--default-key",
+                gpg_id,
+            });
+        }
+
+        var gpg_opts = std.mem.split(u8, self.config.gpgOpts, " ");
+        while (gpg_opts.next()) |opt| {
+            if (opt.len > 0) try args.append(opt);
+        }
+
+        try args.appendSlice(&.{
             "--decrypt",
             absolute_path,
-        };
+        });
 
-        var result = try self.execute(self.allocator, &args);
+        var result = try self.execute(self.allocator, args.items);
+        defer self.allocator.free(result.stderr);
+
+        // TODO: handle freeing of result.stdout
 
         if (result.stdout.len == 0) {
+            defer self.allocator.free(result.stdout);
+
             return error.InvalidOutput;
         }
 
