@@ -66,7 +66,7 @@ pub const Git = struct {
 
         const dot_git_dir: std.fs.Dir = try std.fs.openDirAbsolute(dot_git_dir_path, .{});
         const dir_stat = try dot_git_dir.stat();
-        if (dir_stat.kind == .Directory) {
+        if (dir_stat.kind == .directory) {
             std.log.err("Password store is already a git repository", .{});
             return;
         }
