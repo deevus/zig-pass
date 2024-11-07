@@ -5,8 +5,7 @@ const PassConfig = @import("./config.zig").PassConfig;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const String = []const u8;
-const ChildProcess = std.ChildProcess;
-const ExecResult = ChildProcess.ExecResult;
+const RunResult = std.process.Child.RunResult;
 
 pub const Gpg = struct {
     config: PassConfig,
@@ -21,7 +20,7 @@ pub const Gpg = struct {
         };
     }
 
-    pub fn decrypt(self: Gpg, path: String) !std.mem.SplitIterator(u8) {
+    pub fn decrypt(self: Gpg, path: String) !std.mem.SplitIterator(u8, .sequence) {
         const path_with_extension = try std.mem.join(self.allocator, ".", &.{
             path,
             "gpg",
@@ -54,7 +53,7 @@ pub const Gpg = struct {
             absolute_path,
         });
 
-        var result = try self.execute(self.allocator, args.items);
+        const result = try self.execute(self.allocator, args.items);
         defer self.allocator.free(result.stderr);
 
         // TODO: handle freeing of result.stdout
@@ -93,14 +92,14 @@ pub const Gpg = struct {
         _ = self;
     }
 
-    pub fn execute(self: Gpg, allocator: Allocator, extra_args: []const String) !ExecResult {
+    pub fn execute(self: Gpg, allocator: Allocator, extra_args: []const String) !RunResult {
         var args = ArrayList(String).init(allocator);
         defer args.deinit();
 
         try args.append("gpg");
         try args.appendSlice(if (extra_args.len > 0) extra_args else &.{"--help"});
 
-        const result = try ChildProcess.exec(.{
+        const result = try std.process.Child.run(.{
             .argv = args.items,
             .allocator = allocator,
         });

@@ -134,7 +134,7 @@ fn commandShow(allocator: std.mem.Allocator, pass_config: PassConfig, opts: std.
                     else => .{},
                 };
 
-                const clip_result = try std.ChildProcess.exec(.{
+                const clip_result = try std.process.Child.run(.{
                     .allocator = allocator,
                     .argv = &clip_args,
                 });

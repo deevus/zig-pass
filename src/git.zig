@@ -2,7 +2,7 @@ const std = @import("std");
 const utils = @import("./utils.zig");
 
 const PassConfig = @import("./config.zig").PassConfig;
-const ExecResult = std.ChildProcess.ExecResult;
+const RunResult = std.process.Child.RunResult;
 
 pub const Git = struct {
     config: PassConfig,
@@ -17,14 +17,14 @@ pub const Git = struct {
         };
     }
 
-    pub fn execute(self: Git, args: []const []const u8) !ExecResult {
+    pub fn execute(self: Git, args: []const []const u8) !RunResult {
         var git_args = std.ArrayList([]const u8).init(self.allocator);
         defer git_args.deinit();
 
         try git_args.appendSlice(&.{ "git", "-C", self.config.prefix });
         try git_args.appendSlice(args);
 
-        const result = try std.ChildProcess.exec(.{
+        const result = try std.process.Child.run(.{
             .argv = git_args.items,
             .allocator = self.allocator,
             .max_output_bytes = 1_000_000,
@@ -37,18 +37,18 @@ pub const Git = struct {
         return result;
     }
 
-    pub fn commit(self: Git, message: []const u8) !ExecResult {
+    pub fn commit(self: Git, message: []const u8) !RunResult {
         const message_with_quotes = try utils.wrapWithDoubleQuotes(self.allocator, message);
         defer self.allocator.free(message_with_quotes);
 
         return try self.execute(&.{ "commit", "-m", message_with_quotes });
     }
 
-    pub fn addFile(self: Git, file_name: []const u8) !ExecResult {
+    pub fn addFile(self: Git, file_name: []const u8) !RunResult {
         return try self.execute(&.{ "add", file_name });
     }
 
-    pub fn setLocalConfig(self: Git, key: []const u8, value: []const u8) !ExecResult {
+    pub fn setLocalConfig(self: Git, key: []const u8, value: []const u8) !RunResult {
         return try self.execute(&.{
             "config",
             "--local",

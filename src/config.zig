@@ -115,7 +115,7 @@ pub const PassConfig = struct {
         };
         defer file.close();
 
-        var gpg_id = try allocator.alloc(u8, 16);
+        const gpg_id = try allocator.alloc(u8, 16);
 
         _ = try file.read(gpg_id);
 
