@@ -88,7 +88,7 @@ fn parseShowOpts(opts: std.ArrayList(Opt)) !ShowOptions {
 }
 
 fn commandShow(allocator: std.mem.Allocator, pass_config: PassConfig, opts: std.ArrayList(Opt)) !void {
-    const gpg = Gpg.init(allocator, pass_config, false);
+    var gpg = Gpg.init(allocator, pass_config, false);
     defer gpg.deinit();
 
     const show_options = try parseShowOpts(opts);

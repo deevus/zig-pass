@@ -7,8 +7,7 @@ const GpgError = @import("GpgError.zig");
 pub const GpgMe = @This();
 
 context: *ffi.gpgme_ctx_t,
-allocator: Allocator,
-arena: *std.heap.ArenaAllocator,
+arena: std.heap.ArenaAllocator,
 
 pub fn init(allocator: Allocator) GpgMe {
     _ = ffi.gpgme_check_version(null);
@@ -16,28 +15,25 @@ pub fn init(allocator: Allocator) GpgMe {
     const context = allocator.create(ffi.gpgme_ctx_t) catch @panic("OOM");
     _ = ffi.gpgme_new(context);
 
-    const arena = allocator.create(std.heap.ArenaAllocator) catch @panic("OOM");
-    arena.* = std.heap.ArenaAllocator.init(allocator);
-
     return .{
         .context = context,
-        .allocator = allocator,
-        .arena = arena,
+        .arena = std.heap.ArenaAllocator.init(allocator),
     };
 }
 
 pub fn deinit(self: GpgMe) void {
     _ = ffi.gpgme_release(self.context.*);
-    self.allocator.destroy(self.context);
+    const allocator = self.arena.child_allocator;
+    allocator.destroy(self.context);
     self.arena.deinit();
-    self.allocator.destroy(self.arena);
 }
 
-pub fn decrypt(self: GpgMe, file_path: []const u8) ![]const u8 {
+pub fn decrypt(self: *GpgMe, file_path: []const u8) ![]const u8 {
     const arena_allocator = self.arena.allocator();
+    const allocator = self.arena.child_allocator;
 
-    const file_path_z = try self.allocator.dupeZ(u8, file_path);
-    defer self.allocator.free(file_path_z);
+    const file_path_z = try allocator.dupeZ(u8, file_path);
+    defer allocator.free(file_path_z);
 
     var input: ffi.gpgme_data_t = undefined;
     try GpgError.check(ffi.gpgme_data_new(&input), error.InputDataCreation);

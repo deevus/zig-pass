@@ -26,7 +26,7 @@ pub const Gpg = struct {
         self.gpgme.deinit();
     }
 
-    pub fn decrypt(self: Gpg, path: String) !std.mem.SplitIterator(u8, .sequence) {
+    pub fn decrypt(self: *Gpg, path: String) !std.mem.SplitIterator(u8, .sequence) {
         const absolute_path = try std.fmt.allocPrint(self.allocator, "{s}/{s}.gpg", .{
             self.config.prefix,
             path,
