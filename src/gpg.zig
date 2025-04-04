@@ -36,7 +36,7 @@ pub const Gpg = struct {
 
         const result = try self.gpgme.decrypt(absolute_path);
 
-        return std.mem.split(u8, result, "\n");
+        return std.mem.splitSequence(u8, result, "\n");
     }
 
     pub fn encrypt(self: Gpg, data: String, output_file: String, overwrite: bool, recipients: []String) void {

@@ -42,7 +42,7 @@ pub const Opt = struct {
     }
 };
 
-pub fn parseOpts(args: [][]const u8, allocator: std.mem.Allocator) !std.ArrayList(Opt) {
+pub fn parseOpts(args: [][:0]u8, allocator: std.mem.Allocator) !std.ArrayList(Opt) {
     var opts = std.ArrayList(Opt).init(allocator);
 
     for (args[1..args.len]) |arg| {

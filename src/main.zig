@@ -31,7 +31,7 @@ pub fn main() !void {
     try commandShow(gpa, pass_config, opts);
 }
 
-fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_opts: []Opt, git_args: [][]const u8) !void {
+fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_opts: []Opt, git_args: [][:0]u8) !void {
     const git = Git.init(allocator, pass_config, true);
 
     if (git_opts.len > 0) {
