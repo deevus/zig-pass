@@ -6,7 +6,6 @@ const PassConfig = @import("./config.zig").PassConfig;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const String = []const u8;
-const RunResult = std.process.Child.RunResult;
 
 pub const Gpg = struct {
     config: PassConfig,
