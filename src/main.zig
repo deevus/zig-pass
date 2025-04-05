@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const getopt = @import("./getopt.zig");
 const config = @import("./config.zig");
 const utils = @import("./utils.zig");
+const clipboard = @import("./clipboard.zig");
 
 const PassConfig = config.PassConfig;
 const Opt = getopt.Opt;
@@ -11,7 +12,9 @@ const Gpg = @import("./gpg.zig").Gpg;
 
 pub fn main() !void {
     var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = general_purpose_allocator.deinit();
     const gpa = general_purpose_allocator.allocator();
+
     const args = try std.process.argsAlloc(gpa);
     defer std.process.argsFree(gpa, args);
 
@@ -19,6 +22,7 @@ pub fn main() !void {
     defer pass_config.deinit();
 
     const opts = try getopt.parseOpts(args, gpa);
+    defer opts.deinit();
 
     if (opts.items.len > 0) {
         const first_opt: Opt = opts.items[0];
@@ -114,35 +118,7 @@ fn commandShow(allocator: std.mem.Allocator, pass_config: PassConfig, opts: std.
                 const quoted = try utils.wrapWithDoubleQuotes(allocator, l);
                 defer allocator.free(quoted);
 
-                const clip_script = try utils.getScriptPath(allocator, switch (builtin.os.tag) {
-                    .windows => "Clip.ps1",
-                    else => "Clip.sh",
-                });
-                defer allocator.free(clip_script);
-
-                const clip_args = switch (builtin.os.tag) {
-                    .windows => .{
-                        "powershell",
-                        "-NoProfile",
-                        clip_script,
-                        "-Value",
-                        quoted,
-                        "-ClipTime",
-                        pass_config.clipTime,
-                        "-Name",
-                        name,
-                    },
-                    else => .{},
-                };
-
-                const clip_result = try std.process.Child.run(.{
-                    .allocator = allocator,
-                    .argv = &clip_args,
-                });
-                defer allocator.free(clip_result.stderr);
-                defer allocator.free(clip_result.stdout);
-
-                std.debug.print("{s}{s}\n", .{ clip_result.stderr, clip_result.stdout });
+                try clipboard.setClipboardData(allocator, l);
             }
         } else {
             while (output.next()) |l| {

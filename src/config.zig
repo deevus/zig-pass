@@ -48,6 +48,9 @@ pub const PassConfig = struct {
         allocator.free(self.characterSet);
         allocator.free(self.characterSetNoSymbols);
         allocator.free(self.gpgOpts);
+        if (self.gpgId) |gpg_id| {
+            allocator.free(gpg_id);
+        }
     }
 
     fn getHome(allocator: std.mem.Allocator) ![]const u8 {
