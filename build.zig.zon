@@ -1,7 +1,7 @@
 .{
     .name = .pass,
     .version = "0.0.0",
-    .fingerprint = 0x61a37c7c06cdc1c,
+    .fingerprint = 0xce70d42466176864,
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .clipboard = .{
