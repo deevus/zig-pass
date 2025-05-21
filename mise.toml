@@ -1,0 +1,3 @@
+[tools]
+"ubi:DonIsaac/zlint" = "latest"
+zig = "0.14.0"
