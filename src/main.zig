@@ -13,7 +13,6 @@ const Gpg = @import("./gpg.zig").Gpg;
 const Command = enum(u32) {
     show,
     git,
-    _,
 };
 
 pub fn main() !void {
@@ -27,14 +26,13 @@ pub fn main() !void {
 
     if (opts.items.len > 0) {
         const first_opt: Opt = opts.items[0];
-        if (first_opt.isLiteral()) {
-            if (std.meta.stringToEnum(Command, first_opt.value.?)) |command| switch (command) {
+        if (first_opt == .literal) {
+            if (std.meta.stringToEnum(Command, first_opt.literal)) |command| switch (command) {
                 .git => try commandGit(allocator, pass_config, opts.items[1..], args[2..]),
                 .show => try commandShow(allocator, pass_config, opts),
-                else => {
-                    try printUsage();
-                },
-            };
+            } else {
+                try commandShow(allocator, pass_config, opts);
+            }
             return;
         }
     } else {
@@ -64,7 +62,7 @@ fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_opts: [
     if (git_opts.len > 0) {
         const second_opt: Opt = git_opts[0];
 
-        if (second_opt.valueEquals("init")) {
+        if (second_opt == .literal and std.mem.eql(u8, second_opt.literal, "init")) {
             _ = try git.initRepository();
         } else {
             _ = try git.execute(git_args);
@@ -73,6 +71,11 @@ fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_opts: [
         _ = try git.execute(&.{});
     }
 }
+
+const ShowOption = enum {
+    clip,
+    c,
+};
 
 const ShowOptions = struct {
     selectedLine: u8,
@@ -91,24 +94,16 @@ fn parseShowOpts(opts: std.ArrayList(Opt)) !ShowOptions {
         .name = null,
     };
 
-    var clip_option: ?Opt = null;
     for (all_opts) |opt| {
-        if (opt.isLiteral()) {
-            show_options.name = opt.value;
-        } else if (opt.isShortOpt()) {
-            if (opt.nameEquals("c")) {
-                clip_option = opt;
-            }
-        } else if (opt.isLongOpt()) {
-            if (opt.nameEquals("clip")) {
-                clip_option = opt;
-            }
+        switch (opt) {
+            .literal => |name| show_options.name = name,
+            .long, .short => if (opt.nameToEnum(ShowOption)) |show_option| switch (show_option) {
+                .c, .clip => {
+                    show_options.clip = true;
+                    show_options.selectedLine = if (opt.value()) |value| try std.fmt.parseInt(u8, value, 10) else 0;
+                },
+            },
         }
-    }
-
-    if (clip_option) |clip| {
-        show_options.clip = true;
-        show_options.selectedLine = if (clip.value) |value| try std.fmt.parseInt(u8, value, 10) else 0;
     }
 
     return show_options;

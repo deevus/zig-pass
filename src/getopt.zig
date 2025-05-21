@@ -1,44 +1,45 @@
 const std = @import("std");
 
 pub const OptType = enum {
-    ShortOpt,
-    LongOpt,
-    Literal,
+    short,
+    long,
+    literal,
 };
 
-pub const Opt = struct {
-    type: OptType,
-    name: ?[]const u8,
-    value: ?[]const u8,
-    raw: []const u8,
+pub const OptValue = struct {
+    name: []const u8,
+    value: ?[]const u8 = null,
+};
 
-    pub fn init(t: OptType, name: ?[]const u8, value: ?[]const u8, raw: []const u8) Opt {
-        return Opt{
-            .type = t,
-            .name = name,
-            .value = value,
-            .raw = raw,
-        };
-    }
+pub const Opt = union(OptType) {
+    short: OptValue,
+    long: OptValue,
+    literal: []const u8,
 
     pub fn isLiteral(self: Opt) bool {
-        return self.type == OptType.Literal;
+        return self == .literal;
     }
 
     pub fn isLongOpt(self: Opt) bool {
-        return self.type == OptType.LongOpt;
+        return self == .long;
     }
 
     pub fn isShortOpt(self: Opt) bool {
-        return self.type == OptType.ShortOpt;
+        return self == .short;
     }
 
-    pub fn valueEquals(self: Opt, value: []const u8) bool {
-        return std.mem.eql(u8, value, self.value.?);
+    pub fn nameToEnum(self: Opt, comptime E: type) ?E {
+        return switch (self) {
+            .short, .long => |v| std.meta.stringToEnum(E, v.name),
+            else => null,
+        };
     }
 
-    pub fn nameEquals(self: Opt, name: []const u8) bool {
-        return std.mem.eql(u8, name, self.name.?);
+    pub fn value(self: Opt) ?[]const u8 {
+        return switch (self) {
+            .short, .long => |v| v.value,
+            else => null,
+        };
     }
 };
 
@@ -67,17 +68,29 @@ fn getOptSegments(opt_type: OptType, data: []const u8) Opt {
     const name = data[0 .. indexOfEqualsSign orelse data.len];
     const value: ?[]const u8 = if (indexOfEqualsSign) |i| data[(i + 1)..data.len] else null;
 
-    return Opt.init(opt_type, name, value, data);
+    return switch (opt_type) {
+        .long => Opt{ .long = .{
+            .name = name,
+            .value = value,
+        } },
+        .short => Opt{ .short = .{
+            .name = name,
+            .value = value,
+        } },
+        else => @panic("getOptSegments called with invalid OptType"),
+    };
 }
 
 fn getLongOpt(arg: []const u8) Opt {
-    return getOptSegments(OptType.LongOpt, arg[2..]);
+    return getOptSegments(OptType.long, arg[2..]);
 }
 
 fn getShortOpt(arg: []const u8) Opt {
-    return getOptSegments(OptType.ShortOpt, arg[1..]);
+    return getOptSegments(OptType.short, arg[1..]);
 }
 
 fn getLiteral(arg: []const u8) Opt {
-    return Opt.init(OptType.Literal, null, arg, arg);
+    return Opt{
+        .literal = arg,
+    };
 }
