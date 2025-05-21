@@ -22,11 +22,15 @@ pub fn build(b: *std.Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable(.{
-        .name = "zig-pass",
+    const exe_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .optimize = optimize,
         .target = target,
+    });
+
+    const exe = b.addExecutable(.{
+        .name = "zig-pass",
+        .root_module = exe_mod,
     });
     b.installArtifact(exe);
 
@@ -74,4 +78,9 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
+
+    const dep_clipboard = b.dependency("clipboard", .{});
+    const mod_clipboard = dep_clipboard.module("clipboard");
+
+    exe_mod.addImport("clipboard", mod_clipboard);
 }

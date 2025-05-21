@@ -1,0 +1,17 @@
+.{
+    .name = .zig_pass,
+    .version = "0.0.0",
+    .fingerprint = 0x61a37c7c06cdc1c,
+    .minimum_zig_version = "0.14.0",
+    .dependencies = .{
+        .clipboard = .{
+            .url = "https://github.com/dgv/clipboard/archive/refs/heads/main.zip",
+            .hash = "clipboard-0.0.0-AAAAAIwjAACpHvaPY6WKRdMHeV7oYp0dbpOqAhyxyGns",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

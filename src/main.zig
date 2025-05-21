@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const getopt = @import("./getopt.zig");
 const config = @import("./config.zig");
 const utils = @import("./utils.zig");
-const clipboard = @import("./clipboard.zig");
+const clipboard = @import("clipboard");
 
 const PassConfig = config.PassConfig;
 const Opt = getopt.Opt;
@@ -118,7 +118,7 @@ fn commandShow(allocator: std.mem.Allocator, pass_config: PassConfig, opts: std.
                 const quoted = try utils.wrapWithDoubleQuotes(allocator, l);
                 defer allocator.free(quoted);
 
-                try clipboard.setClipboardData(allocator, l);
+                try clipboard.write(l);
             }
         } else {
             while (output.next()) |l| {
