@@ -1,5 +1,5 @@
 .{
-    .name = .zig_pass,
+    .name = .pass,
     .version = "0.0.0",
     .fingerprint = 0x61a37c7c06cdc1c,
     .minimum_zig_version = "0.14.0",
