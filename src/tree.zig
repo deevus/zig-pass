@@ -69,9 +69,6 @@ pub fn printTree(root: Node) void {
 }
 
 const StraightVert = "\x7c  ";
-const StraightHorz = "\xc4\xc4\xc4";
-const TIntersection = "\xc3\xc4\xc4";
-const Left = "\xc0  ";
 
 fn printTreeRecursive(node: Node, depth: u64) void {
     std.debug.print("{s}\n", .{node.name});

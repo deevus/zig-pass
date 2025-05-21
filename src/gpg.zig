@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("./utils.zig");
 const GpgMe = @import("gpgme.zig");
 
 const PassConfig = @import("./config.zig").PassConfig;

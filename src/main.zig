@@ -1,17 +1,11 @@
 const std = @import("std");
-const builtin = @import("builtin");
 const getopt = @import("./getopt.zig");
 const config = @import("./config.zig");
-const utils = @import("./utils.zig");
-const clipboard = @import("clipboard");
 
 const show_cmd = @import("cli/show_cmd.zig");
 const git_cmd = @import("cli/git_cmd.zig");
 
-const PassConfig = config.PassConfig;
 const Opt = getopt.Opt;
-const Git = @import("./git.zig").Git;
-const Gpg = @import("./gpg.zig").Gpg;
 
 const Command = enum(u32) {
     show,

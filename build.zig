@@ -1,5 +1,4 @@
 const std = @import("std");
-const Query = std.Target.Query;
 
 pub fn build(b: *std.Build) !void {
     const default_target: std.Target.Query = switch (b.graph.host.result.os.tag) {
