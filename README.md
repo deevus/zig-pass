@@ -18,8 +18,8 @@ My particular use-case is using a dotfile manager: [Chezmoi](https://www.chezmoi
 
 | Feature            | Windows | Linux | MacOS |
 | ------------------ | ------- | ----- | ----- |
-| Show password file | ✅      | ❌    | ❌    |
-| Copy to clipboard  | ✅      | ❌    | ❌    |
+| Show password file | ✅      | ✅    | ✅   |
+| Copy to clipboard  | ✅      | ✅    | ✅   |
 | QRCode             | ❌      | ❌    | ❌    |
 | Create password    | ❌      | ❌    | ❌    |
 | Edit password      | ❌      | ❌    | ❌    |
