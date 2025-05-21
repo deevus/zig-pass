@@ -6,7 +6,7 @@ Zig Pass aims to be somewhat compatible with the bash client, so that you can us
 
 # Requirements
 
-- GnuPg (`gpg`)
+- GPGME
 
 # Why
 
