@@ -10,29 +10,52 @@ const Opt = getopt.Opt;
 const Git = @import("./git.zig").Git;
 const Gpg = @import("./gpg.zig").Gpg;
 
+const Command = enum(u32) {
+    show,
+    git,
+    _,
+};
+
 pub fn main() !void {
-    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = general_purpose_allocator.deinit();
-    const gpa = general_purpose_allocator.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    const args = try std.process.argsAlloc(gpa);
-    defer std.process.argsFree(gpa, args);
-
-    const pass_config = try config.PassConfig.init(gpa);
-    defer pass_config.deinit();
-
-    const opts = try getopt.parseOpts(args, gpa);
-    defer opts.deinit();
+    const args = try std.process.argsAlloc(allocator);
+    const pass_config = try config.PassConfig.init(allocator);
+    const opts = try getopt.parseOpts(args, allocator);
 
     if (opts.items.len > 0) {
         const first_opt: Opt = opts.items[0];
-        if (first_opt.isLiteral() and first_opt.valueEquals("git")) {
-            try commandGit(gpa, pass_config, opts.items[1..], args[2..]);
+        if (first_opt.isLiteral()) {
+            if (std.meta.stringToEnum(Command, first_opt.value.?)) |command| switch (command) {
+                .git => try commandGit(allocator, pass_config, opts.items[1..], args[2..]),
+                .show => try commandShow(allocator, pass_config, opts),
+                else => {
+                    try printUsage();
+                },
+            };
             return;
         }
+    } else {
+        try printUsage();
+        std.process.exit(1);
     }
+}
 
-    try commandShow(gpa, pass_config, opts);
+fn printUsage() !void {
+    const stderr = std.io.getStdErr().writer();
+    try stderr.print(
+        \\Usage: pass [command] [options]
+        \\
+        \\Commands:
+        \\  show [name]       Show password content
+        \\  git [command]     Execute git commands
+        \\
+        \\Options:
+        \\  -c, --clip [line] Copy password line to clipboard
+        \\
+    , .{});
 }
 
 fn commandGit(allocator: std.mem.Allocator, pass_config: PassConfig, git_opts: []Opt, git_args: [][:0]u8) !void {

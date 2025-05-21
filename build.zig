@@ -1,7 +1,7 @@
 const std = @import("std");
 const Query = std.Target.Query;
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const default_target: std.Target.Query = switch (b.graph.host.result.os.tag) {
         // Gpg4Win is only built for x86
         .windows => .{
@@ -9,6 +9,9 @@ pub fn build(b: *std.Build) void {
         },
         else => .{},
     };
+
+    var dep_mod_map = try dependencyModuleMap(b);
+    defer dep_mod_map.deinit();
 
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
@@ -27,6 +30,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .target = target,
     });
+    exe_mod.addImport("clipboard", dep_mod_map.get("clipboard").?);
 
     const exe = b.addExecutable(.{
         .name = "zig-pass",
@@ -78,9 +82,14 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
+}
+
+fn dependencyModuleMap(b: *std.Build) !std.StringHashMap(*std.Build.Module) {
+    var mod_map = std.StringHashMap(*std.Build.Module).init(b.allocator);
 
     const dep_clipboard = b.dependency("clipboard", .{});
     const mod_clipboard = dep_clipboard.module("clipboard");
+    try mod_map.putNoClobber("clipboard", mod_clipboard);
 
-    exe_mod.addImport("clipboard", mod_clipboard);
+    return mod_map;
 }
